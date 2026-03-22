@@ -82,8 +82,8 @@ footer{padding:24px 64px;border-top:1px solid var(--border);display:flex;justify
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
+const SUPABASE_URL  = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON = 'YOUR_ANON_KEY';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // If already logged in, redirect to dashboard
@@ -132,7 +132,7 @@ document.getElementById('forgotLink').addEventListener('click', async function(e
     return;
   }
   await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/login.html'
+    redirectTo: 'https://git-to-sleep.github.io/iris/login.html'
   });
   document.getElementById('errorMsg').style.display = 'none';
   document.getElementById('verifyMsg').textContent = 'Password reset email sent — check your inbox.';
