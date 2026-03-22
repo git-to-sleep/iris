@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Verify Email · dot. IRIS</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#06060a;--bg2:#0c0c12;--accent:#38bdf8;--text:#f0f0f4;--muted:#4a4a5a;--border:#16161e;--green:#34d399;--red:#f87171;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Geist Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+nav{position:fixed;top:0;left:0;right:0;padding:24px 64px;border-bottom:1px solid rgba(255,255,255,0.03);}
+.logo{font-family:'Instrument Serif',serif;font-size:20px;text-decoration:none;color:var(--text);}
+.logo em{color:var(--accent);font-style:italic;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:64px 56px;width:100%;max-width:480px;text-align:center;}
+.icon{font-size:48px;margin-bottom:24px;}
+h1{font-family:'Instrument Serif',serif;font-size:40px;font-weight:400;letter-spacing:-2px;margin-bottom:12px;}
+h1 em{color:var(--accent);font-style:italic;}
+.subtitle{font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:32px;}
+.credits-reveal{display:none;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:12px;padding:24px;margin-bottom:32px;}
+.credits-number{font-family:'Instrument Serif',serif;font-size:56px;letter-spacing:-3px;color:var(--accent);line-height:1;}
+.credits-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.credit-breakdown{display:flex;gap:0;margin-top:16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.credit-item{flex:1;padding:12px;font-size:11px;color:var(--muted);border-right:1px solid var(--border);}
+.credit-item:last-child{border-right:none;}
+.credit-item strong{display:block;font-family:'Instrument Serif',serif;font-size:20px;color:var(--text);letter-spacing:-1px;margin-bottom:2px;}
+.btn{display:inline-block;padding:14px 36px;background:var(--text);color:var(--bg);border:none;border-radius:8px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;text-decoration:none;}
+.btn:hover{opacity:.85;}
+.error-state{display:none;}
+.error-state h1 em{color:var(--red);}
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 24px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo"><em>dot.</em> IRIS</a>
+</nav>
+
+<!-- Loading state -->
+<div class="card" id="loadingState">
+  <div class="spinner"></div>
+  <h1>Verifying your<br/><em>email.</em></h1>
+  <p class="subtitle">Hold tight — we're confirming your account...</p>
+</div>
+
+<!-- Success state -->
+<div class="card" id="successState" style="display:none;">
+  <div class="icon">✦</div>
+  <h1>You're<br/><em>verified.</em></h1>
+  <p class="subtitle">Your account is active. Here's what's waiting for you:</p>
+  <div class="credits-reveal" id="creditsReveal">
+    <div class="credits-number">10</div>
+    <div class="credits-label">Free credits</div>
+    <div class="credit-breakdown">
+      <div class="credit-item"><strong>1</strong>per image</div>
+      <div class="credit-item"><strong>2</strong>per video</div>
+      <div class="credit-item"><strong>10</strong>total</div>
+    </div>
+  </div>
+  <a href="dashboard.html" class="btn">Go to Dashboard →</a>
+</div>
+
+<!-- Error state -->
+<div class="card error-state" id="errorState">
+  <div class="icon">⚠</div>
+  <h1>Link<br/><em style="color:var(--red);">expired.</em></h1>
+  <p class="subtitle">This verification link has expired or already been used.<br/>Request a new one from the sign in page.</p>
+  <a href="login.html" class="btn">Back to Sign In</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+async function handleVerification() {
+  // Supabase puts the token in the URL hash on redirect
+  const { data, error } = await sb.auth.getSession();
+
+  if (error || !data.session) {
+    // Try to exchange the hash tokens
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken  = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    if (accessToken) {
+      const { error: setErr } = await sb.auth.setSession({
+        access_token:  accessToken,
+        refresh_token: refreshToken
+      });
+      if (setErr) {
+        showError();
+        return;
+      }
+    } else {
+      showError();
+      return;
+    }
+  }
+
+  showSuccess();
+}
+
+function showSuccess() {
+  document.getElementById('loadingState').style.display  = 'none';
+  document.getElementById('successState').style.display  = 'block';
+  // Animate credits in
+  setTimeout(() => {
+    document.getElementById('creditsReveal').style.display = 'block';
+  }, 400);
+}
+
+function showError() {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorState').style.display   = 'block';
+}
+
+handleVerification();
+</script>
+</body>
+</html>

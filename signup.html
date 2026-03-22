@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sign Up · dot. IRIS</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#06060a;--bg2:#0c0c12;--bg3:#111118;--accent:#38bdf8;--text:#f0f0f4;--muted:#4a4a5a;--border:#16161e;--green:#34d399;--red:#f87171;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Geist Mono',monospace;min-height:100vh;display:flex;flex-direction:column;}
+nav{padding:24px 64px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.03);}
+.logo{font-family:'Instrument Serif',serif;font-size:20px;text-decoration:none;color:var(--text);}
+.logo em{color:var(--accent);font-style:italic;}
+.nav-link{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .15s;}
+.nav-link:hover{color:var(--text);}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:60px 24px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:56px;width:100%;max-width:480px;}
+.card-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.card-eyebrow::before{content:'';width:24px;height:1px;background:var(--accent);}
+h1{font-family:'Instrument Serif',serif;font-size:40px;font-weight:400;letter-spacing:-2px;margin-bottom:8px;}
+h1 em{color:var(--accent);font-style:italic;}
+.subtitle{font-size:12px;color:var(--muted);margin-bottom:40px;line-height:1.7;}
+.credit-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:var(--accent);font-size:11px;letter-spacing:1px;padding:6px 14px;border-radius:100px;margin-bottom:32px;}
+.form{display:flex;flex-direction:column;gap:12px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:13px 16px;font-family:'Geist Mono',monospace;font-size:13px;outline:none;transition:border .15s;}
+input:focus{border-color:rgba(56,189,248,0.4);}
+input::placeholder{color:var(--muted);}
+.btn{width:100%;padding:15px;background:var(--text);color:var(--bg);border:none;border-radius:8px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;margin-top:8px;}
+.btn:hover{opacity:.85;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-loading::after{content:' ...'}
+.divider{text-align:center;font-size:11px;color:var(--muted);margin:4px 0;}
+.login-link{text-align:center;font-size:12px;color:var(--muted);margin-top:20px;}
+.login-link a{color:var(--accent);text-decoration:none;}
+.error-msg{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);color:var(--red);border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.6;display:none;}
+.success-msg{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);color:var(--green);border-radius:8px;padding:20px;font-size:13px;line-height:1.8;text-align:center;display:none;}
+.success-msg .big{font-family:'Instrument Serif',serif;font-size:32px;letter-spacing:-1px;margin-bottom:8px;}
+.strength{height:2px;border-radius:1px;background:var(--border);margin-top:6px;overflow:hidden;}
+.strength-bar{height:100%;width:0;border-radius:1px;transition:width .3s,background .3s;}
+.strength-label{font-size:10px;color:var(--muted);margin-top:4px;}
+footer{padding:24px 64px;border-top:1px solid var(--border);display:flex;justify-content:space-between;}
+.footer-note{font-size:11px;color:var(--muted);}
+@media(max-width:600px){nav{padding:20px 24px;} .card{padding:36px 28px;} .form-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo"><em>dot.</em> IRIS</a>
+  <a href="login.html" class="nav-link">Sign in</a>
+</nav>
+
+<main>
+  <div class="card">
+    <div class="card-eyebrow">Free Trial</div>
+    <h1>Create your<br/><em>account.</em></h1>
+    <p class="subtitle">Join to get instant access to IRIS — no credit card required.</p>
+    <div class="credit-badge">✦ 10 free credits included</div>
+
+    <div id="errorMsg" class="error-msg"></div>
+    <div id="successMsg" class="success-msg">
+      <div class="big">Check your inbox.</div>
+      We sent a verification link to <span id="sentEmail"></span>.<br/>
+      Click the link to activate your account and claim your 10 free credits.
+    </div>
+
+    <form class="form" id="signupForm">
+      <div class="form-row">
+        <div>
+          <label>First name</label>
+          <input type="text" id="firstName" placeholder="Rishabh" required autocomplete="given-name"/>
+        </div>
+        <div>
+          <label>Last name</label>
+          <input type="text" id="lastName" placeholder="Bhatia" autocomplete="family-name"/>
+        </div>
+      </div>
+      <div>
+        <label>Email address</label>
+        <input type="email" id="email" placeholder="you@company.com" required autocomplete="email"/>
+      </div>
+      <div>
+        <label>Password</label>
+        <input type="password" id="password" placeholder="8+ characters" required minlength="8" autocomplete="new-password" oninput="checkStrength(this.value)"/>
+        <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
+        <div class="strength-label" id="strengthLabel"></div>
+      </div>
+      <div>
+        <label>Confirm password</label>
+        <input type="password" id="confirmPassword" placeholder="Repeat password" required autocomplete="new-password"/>
+      </div>
+      <button type="submit" class="btn" id="submitBtn">Create Account →</button>
+    </form>
+
+    <div class="login-link">Already have an account? <a href="login.html">Sign in</a></div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-note"><em>dot.</em> IRIS — 10 credits · 1 per image · 2 per video</div>
+  <div class="footer-note">© 2025</div>
+</footer>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ════════════════════════════════════════
+//  REPLACE THESE WITH YOUR SUPABASE CREDS
+//  Dashboard → Settings → API
+// ════════════════════════════════════════
+const SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
+// ════════════════════════════════════════
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Password strength checker
+function checkStrength(pw) {
+  const bar = document.getElementById('strengthBar');
+  const lbl = document.getElementById('strengthLabel');
+  let score = 0;
+  if (pw.length >= 8)  score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const colors = ['','#f87171','#fbbf24','#fbbf24','#34d399','#34d399'];
+  const labels = ['','Weak','Fair','Fair','Strong','Very strong'];
+  bar.style.width = (score / 5 * 100) + '%';
+  bar.style.background = colors[score] || '';
+  lbl.textContent = labels[score] || '';
+  lbl.style.color = colors[score] || '';
+}
+
+document.getElementById('signupForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn   = document.getElementById('submitBtn');
+  const errEl = document.getElementById('errorMsg');
+  const sucEl = document.getElementById('successMsg');
+  errEl.style.display = 'none';
+
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const confirm  = document.getElementById('confirmPassword').value;
+  const first    = document.getElementById('firstName').value.trim();
+
+  if (password !== confirm) {
+    errEl.textContent = 'Passwords do not match.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.classList.add('btn-loading');
+  btn.textContent = 'Creating account';
+
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.origin + '/verify.html',
+      data: { first_name: first }
+    }
+  });
+
+  btn.disabled = false;
+  btn.classList.remove('btn-loading');
+  btn.textContent = 'Create Account →';
+
+  if (error) {
+    errEl.textContent = error.message;
+    errEl.style.display = 'block';
+  } else {
+    document.getElementById('sentEmail').textContent = email;
+    document.getElementById('signupForm').style.display = 'none';
+    sucEl.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
