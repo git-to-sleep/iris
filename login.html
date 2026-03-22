@@ -53,53 +53,53 @@ footer{padding:24px 64px;border-top:1px solid var(--border);display:flex;justify
 
 <main>
   <div class="card">
-    <div class="card-eyebrow">Welcome back</div>
-    <h1>Sign <em>in.</em></h1>
-    <p class="subtitle">Access your IRIS dashboard and credit balance.</p>
 
-    <div id="errorMsg" class="error-msg"></div>
-    <div id="verifyMsg" class="verify-msg">
-      Please verify your email before signing in. Check your inbox for the verification link.
+    <!-- ── LOGIN VIEW ── -->
+    <div id="loginView">
+      <div class="card-eyebrow">Welcome back</div>
+      <h1>Sign <em>in.</em></h1>
+      <p class="subtitle">Access your IRIS dashboard and credit balance.</p>
+      <div id="errorMsg" class="error-msg"></div>
+      <div id="verifyMsg" class="verify-msg"></div>
+      <form class="form" id="loginForm">
+        <div>
+          <label>Email address</label>
+          <input type="email" id="email" placeholder="you@company.com" required autocomplete="email"/>
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Your password" required autocomplete="current-password"/>
+        </div>
+        <div class="forgot"><a href="#" id="forgotLink">Forgot password?</a></div>
+        <button type="submit" class="btn" id="submitBtn">Sign In →</button>
+      </form>
+      <div class="signup-link">Don't have an account? <a href="signup.html">Sign up free</a></div>
     </div>
 
-    <form class="form" id="loginForm">
-      <div>
-        <label>Email address</label>
-        <input type="email" id="email" placeholder="you@company.com" required autocomplete="email"/>
+    <!-- ── RESET PASSWORD VIEW ── -->
+    <div id="resetView" style="display:none;">
+      <div class="card-eyebrow">Reset password</div>
+      <h1>New <em>password.</em></h1>
+      <p class="subtitle">Enter your new password below.</p>
+      <div id="resetError" class="error-msg"></div>
+      <div id="resetSuccess" class="success-msg">
+        <div class="big">Password updated.</div>
+        Signing you in...
       </div>
-      <div>
-        <label>Password</label>
-        <input type="password" id="password" placeholder="Your password" required autocomplete="current-password"/>
-      </div>
-      <div class="forgot"><a href="#" id="forgotLink">Forgot password?</a></div>
-      <button type="submit" class="btn" id="submitBtn">Sign In →</button>
-    </form>
-
-    <div class="signup-link">Don't have an account? <a href="signup.html">Sign up free</a></div>
-
-  <!-- Reset password form — shown when reset token is in URL -->
-  <div id="resetSection" style="display:none;">
-    <div class="card-eyebrow">Reset password</div>
-    <h1>New <em>password.</em></h1>
-    <p class="subtitle">Enter your new password below.</p>
-    <div id="resetError" class="error-msg"></div>
-    <div id="resetSuccess" class="success-msg">
-      <div class="big">Password updated.</div>
-      Signing you in...
+      <form class="form" id="resetForm">
+        <div>
+          <label>New password</label>
+          <input type="password" id="newPassword" placeholder="8+ characters" required minlength="8" oninput="checkStrength(this.value)"/>
+          <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
+        </div>
+        <div>
+          <label>Confirm new password</label>
+          <input type="password" id="confirmNewPassword" placeholder="Repeat password" required/>
+        </div>
+        <button type="submit" class="btn" id="resetBtn">Set New Password →</button>
+      </form>
     </div>
-    <form class="form" id="resetForm">
-      <div>
-        <label>New password</label>
-        <input type="password" id="newPassword" placeholder="8+ characters" required minlength="8" oninput="checkStrength(this.value)"/>
-        <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
-      </div>
-      <div>
-        <label>Confirm new password</label>
-        <input type="password" id="confirmNewPassword" placeholder="Repeat password" required/>
-      </div>
-      <button type="submit" class="btn" id="resetBtn">Set New Password →</button>
-    </form>
-  </div>
+
   </div>
 </main>
 
@@ -114,11 +114,29 @@ const SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// If already logged in, redirect to dashboard
-sb.auth.getSession().then(({ data }) => {
+// ── DETECT RESET TOKEN IN URL ──
+async function checkForResetToken() {
+  const hash = window.location.hash;
+  if (hash && hash.includes('type=recovery')) {
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken  = params.get('access_token');
+    const refreshToken = params.get('refresh_token') || '';
+    if (accessToken) {
+      const { error } = await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (!error) {
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('resetView').style.display = 'block';
+        return;
+      }
+    }
+  }
+  // Normal — redirect to dashboard if already logged in
+  const { data } = await sb.auth.getSession();
   if (data.session) window.location.href = 'dashboard.html';
-});
+}
+checkForResetToken();
 
+// ── LOGIN ──
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const btn   = document.getElementById('submitBtn');
@@ -127,19 +145,20 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   errEl.style.display = 'none';
   verEl.style.display = 'none';
 
-  const email    = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-
   btn.disabled = true;
   btn.textContent = 'Signing in ...';
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({
+    email:    document.getElementById('email').value.trim(),
+    password: document.getElementById('password').value
+  });
 
   btn.disabled = false;
   btn.textContent = 'Sign In →';
 
   if (error) {
-    if (error.message.toLowerCase().includes('email')) {
+    if (error.message.toLowerCase().includes('email not confirmed')) {
+      verEl.textContent = 'Please verify your email before signing in. Check your inbox.';
       verEl.style.display = 'block';
     } else {
       errEl.textContent = error.message;
@@ -150,21 +169,80 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   }
 });
 
-// Forgot password
+// ── FORGOT PASSWORD ──
 document.getElementById('forgotLink').addEventListener('click', async function(e) {
   e.preventDefault();
+  const errEl = document.getElementById('errorMsg');
+  const verEl = document.getElementById('verifyMsg');
   const email = document.getElementById('email').value.trim();
+  errEl.style.display = 'none';
+  verEl.style.display = 'none';
+
   if (!email) {
-    document.getElementById('errorMsg').textContent = 'Enter your email address first.';
-    document.getElementById('errorMsg').style.display = 'block';
+    errEl.textContent = 'Enter your email address first then click Forgot password.';
+    errEl.style.display = 'block';
     return;
   }
-  await sb.auth.resetPasswordForEmail(email, {
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://git-to-sleep.github.io/iris/login.html'
   });
-  document.getElementById('errorMsg').style.display = 'none';
-  document.getElementById('verifyMsg').textContent = 'Password reset email sent — check your inbox.';
-  document.getElementById('verifyMsg').style.display = 'block';
+
+  if (error) {
+    errEl.textContent = 'Error: ' + error.message;
+    errEl.style.display = 'block';
+  } else {
+    verEl.textContent = 'Password reset email sent to ' + email + ' — check your inbox and spam folder.';
+    verEl.style.display = 'block';
+  }
+});
+
+// ── PASSWORD STRENGTH ──
+function checkStrength(pw) {
+  const bar = document.getElementById('strengthBar');
+  let score = 0;
+  if (pw.length >= 8)  score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const colors = ['','#f87171','#fbbf24','#fbbf24','#34d399','#34d399'];
+  bar.style.width = (score / 5 * 100) + '%';
+  bar.style.background = colors[score] || '';
+}
+
+// ── SET NEW PASSWORD ──
+document.getElementById('resetForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn     = document.getElementById('resetBtn');
+  const errEl   = document.getElementById('resetError');
+  const sucEl   = document.getElementById('resetSuccess');
+  const newPw   = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmNewPassword').value;
+
+  errEl.style.display = 'none';
+
+  if (newPw !== confirm) {
+    errEl.textContent = 'Passwords do not match.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Updating ...';
+
+  const { error } = await sb.auth.updateUser({ password: newPw });
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = 'Set New Password →';
+    errEl.textContent = error.message;
+    errEl.style.display = 'block';
+  } else {
+    document.getElementById('resetForm').style.display = 'none';
+    sucEl.style.display = 'block';
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
+  }
 });
 </script>
 </body>
