@@ -176,12 +176,16 @@ var selectedVideo = null;
 var analysisHistory = [];
 
 async function init() {
+  document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>connecting...</em>';
   var sessionData = await sb.auth.getSession();
   var session = sessionData.data.session;
+  document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>checking session...</em>';
   if (!session) {
-    window.location.href = 'login.html';
+    document.getElementById('welcomeTitle').innerHTML = 'No session found.<br/><em><a href="login.html" style="color:var(--accent);">Sign in again</a></em>';
+    setTimeout(function() { window.location.href = 'login.html'; }, 2000);
     return;
   }
+  document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>loading profile...</em>';
 
   currentUser = session.user;
   document.getElementById('navEmail').textContent = currentUser.email;
@@ -197,6 +201,7 @@ async function init() {
   var profileResult = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
 
   if (profileResult.error || !profileResult.data) {
+    document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>creating profile...</em>';
     var insertResult = await sb.from('profiles').insert({
       id: currentUser.id,
       email: currentUser.email,
