@@ -16,7 +16,7 @@ nav{padding:20px 48px;display:flex;align-items:center;justify-content:space-betw
 .nav-email{font-size:11px;color:var(--muted);}
 .credit-chip{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);color:var(--accent);font-size:11px;letter-spacing:1px;padding:6px 14px;border-radius:100px;display:flex;align-items:center;gap:6px;}
 .credit-chip span{font-family:'Instrument Serif',serif;font-size:18px;letter-spacing:-1px;}
-.btn-sm{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);padding:8px 16px;border-radius:6px;cursor:pointer;transition:all .15s;text-decoration:none;}
+.btn-sm{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);padding:8px 16px;border-radius:6px;cursor:pointer;transition:all .15s;}
 .btn-sm:hover{color:var(--text);border-color:var(--muted);}
 main{max-width:1100px;margin:0 auto;padding:60px 48px;}
 .welcome{margin-bottom:56px;}
@@ -34,7 +34,7 @@ main{max-width:1100px;margin:0 auto;padding:60px 48px;}
 .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:40px;}
 .analysis-card{background:var(--bg2);padding:40px;position:relative;}
 .analysis-card.video{background:var(--bg);}
-.analysis-card .top-bar{position:absolute;top:0;left:0;right:0;height:2px;}
+.top-bar{position:absolute;top:0;left:0;right:0;height:2px;}
 .analysis-card.video .top-bar{background:linear-gradient(90deg,var(--accent),transparent);}
 .analysis-type{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:20px;}
 .analysis-type.featured{color:var(--accent);}
@@ -42,8 +42,8 @@ main{max-width:1100px;margin:0 auto;padding:60px 48px;}
 .analysis-cost-sub{font-size:12px;color:var(--muted);margin-bottom:24px;}
 .analysis-features{display:flex;flex-direction:column;gap:8px;margin-bottom:32px;}
 .analysis-feature{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
-.analysis-feature .check{color:var(--green);}
-.analysis-feature .check.acc{color:var(--accent);}
+.check{color:var(--green);}
+.check.acc{color:var(--accent);}
 .btn-analysis{width:100%;padding:13px;background:var(--text);color:var(--bg);border:none;border-radius:8px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;}
 .btn-analysis:hover{opacity:.85;}
 .btn-analysis:disabled{opacity:.35;cursor:not-allowed;}
@@ -62,9 +62,6 @@ main{max-width:1100px;margin:0 auto;padding:60px 48px;}
 .upload-label{font-size:12px;color:var(--muted);line-height:1.8;}
 .upload-label span{color:var(--accent);}
 input[type=file]{display:none;}
-.result-box{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px;display:none;}
-.result-box img{width:100%;border-radius:8px;}
-.result-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -73,23 +70,21 @@ input[type=file]{display:none;}
   <a href="index.html" class="logo"><em>dot.</em> IRIS</a>
   <div class="nav-right">
     <span class="nav-email" id="navEmail">Loading...</span>
-    <div class="credit-chip">✦ <span id="navCredits">—</span> credits</div>
+    <div class="credit-chip">&#10022; <span id="navCredits">-</span> credits</div>
     <button class="btn-sm" id="signOutBtn">Sign out</button>
   </div>
 </nav>
 
 <main>
-  <!-- Welcome -->
   <div class="welcome">
     <div class="welcome-label">Dashboard</div>
     <div class="welcome-title" id="welcomeTitle">Welcome,<br/><em>loading...</em></div>
   </div>
 
-  <!-- Stats row -->
   <div class="stats-row">
     <div class="stat-cell">
       <div class="stat-label">Credits remaining</div>
-      <div class="stat-val accent" id="creditsDisplay">—</div>
+      <div class="stat-val accent" id="creditsDisplay">-</div>
       <div class="stat-sub">of 10 free</div>
     </div>
     <div class="stat-cell">
@@ -109,22 +104,20 @@ input[type=file]{display:none;}
     </div>
   </div>
 
-  <!-- Analysis cards -->
   <div class="section-title">Run an <em>analysis.</em></div>
   <div id="noCreditsMsg" class="no-credits">
-    You've used all your free credits. <a href="index.html#contact" style="color:var(--red);">Contact us</a> to get more.
+    You have used all your free credits. <a href="index.html#contact" style="color:var(--red);">Contact us</a> to get more.
   </div>
 
   <div class="analysis-grid">
-    <!-- Image -->
     <div class="analysis-card">
       <div class="analysis-type">Image Analysis</div>
       <div class="analysis-cost">1<span style="font-size:24px;color:var(--muted);letter-spacing:-1px;"> credit</span></div>
       <div class="analysis-cost-sub">Full-resolution heatmap with all 5 metrics</div>
       <div class="analysis-features">
-        <div class="analysis-feature"><span class="check">✓</span> Human vs AI heatmap overlay</div>
-        <div class="analysis-feature"><span class="check">✓</span> AUC, CC, KL, MAE, NSS scores</div>
-        <div class="analysis-feature"><span class="check">✓</span> Downloadable PNG</div>
+        <div class="analysis-feature"><span class="check">+</span> Human vs AI heatmap overlay</div>
+        <div class="analysis-feature"><span class="check">+</span> AUC, CC, KL, MAE, NSS scores</div>
+        <div class="analysis-feature"><span class="check">+</span> Downloadable PNG</div>
       </div>
       <div class="upload-area" id="imageUploadArea" onclick="document.getElementById('imageInput').click()">
         <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(this)"/>
@@ -133,16 +126,15 @@ input[type=file]{display:none;}
       <button class="btn-analysis" id="runImageBtn" disabled>Upload an image first</button>
     </div>
 
-    <!-- Video -->
     <div class="analysis-card video">
       <div class="top-bar"></div>
-      <div class="analysis-type featured">Video Analysis · Industry First</div>
+      <div class="analysis-type featured">Video Analysis - Industry First</div>
       <div class="analysis-cost">2<span style="font-size:24px;color:var(--muted);letter-spacing:-1px;"> credits</span></div>
       <div class="analysis-cost-sub">Frame-by-frame heatmap with metrics per frame</div>
       <div class="analysis-features">
-        <div class="analysis-feature"><span class="check acc">✓</span> Frame-by-frame heatmap video</div>
-        <div class="analysis-feature"><span class="check acc">✓</span> Live MAE, AUC, CC, KL per frame</div>
-        <div class="analysis-feature"><span class="check acc">✓</span> Original audio preserved</div>
+        <div class="analysis-feature"><span class="check acc">+</span> Frame-by-frame heatmap video</div>
+        <div class="analysis-feature"><span class="check acc">+</span> Live MAE, AUC, CC, KL per frame</div>
+        <div class="analysis-feature"><span class="check acc">+</span> Original audio preserved</div>
       </div>
       <div class="upload-area" id="videoUploadArea" onclick="document.getElementById('videoInput').click()">
         <input type="file" id="videoInput" accept="video/*" onchange="handleVideoUpload(this)"/>
@@ -152,15 +144,14 @@ input[type=file]{display:none;}
     </div>
   </div>
 
-  <!-- History -->
   <div class="section-title">Analysis <em>history.</em></div>
-  <div id="historyEmpty" class="empty-history">No analyses yet — run your first one above.</div>
+  <div id="historyEmpty" class="empty-history">No analyses yet - run your first one above.</div>
   <table class="history-table" id="historyTable" style="display:none;">
     <thead>
       <tr>
         <th>File</th>
         <th>Type</th>
-        <th>Credits used</th>
+        <th>Credits</th>
         <th>Date</th>
         <th>Status</th>
       </tr>
@@ -171,182 +162,245 @@ input[type=file]{display:none;}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+var SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
+var SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
+var HF_SPACE      = 'https://privateuser1234-iris.hf.space';
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-let currentUser  = null;
-let userCredits  = 0;
-let imagesCount  = 0;
-let videosCount  = 0;
-let selectedImage = null;
-let selectedVideo = null;
-const history    = [];
+var currentUser   = null;
+var userCredits   = 0;
+var imagesCount   = 0;
+var videosCount   = 0;
+var selectedImage = null;
+var selectedVideo = null;
+var analysisHistory = [];
 
-// ── AUTH GUARD ──
 async function init() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = 'login.html'; return; }
+  var sessionData = await sb.auth.getSession();
+  var session = sessionData.data.session;
+  if (!session) {
+    window.location.href = 'login.html';
+    return;
+  }
 
   currentUser = session.user;
   document.getElementById('navEmail').textContent = currentUser.email;
-  const firstName = currentUser.user_metadata?.first_name || currentUser.email.split('@')[0];
-  document.getElementById('welcomeTitle').innerHTML = `Welcome,<br/><em>${firstName}.</em>`;
 
-  // Load profile + credits
-  const { data: profile } = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
-  if (profile) {
-    userCredits = profile.credits;
-    updateCreditDisplay();
+  var firstName = 'there';
+  if (currentUser.user_metadata && currentUser.user_metadata.first_name) {
+    firstName = currentUser.user_metadata.first_name;
+  } else {
+    firstName = currentUser.email.split('@')[0];
   }
+  document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>' + firstName + '.</em>';
+
+  var profileResult = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
+
+  if (profileResult.error || !profileResult.data) {
+    var insertResult = await sb.from('profiles').insert({
+      id: currentUser.id,
+      email: currentUser.email,
+      credits: 10
+    }).select('credits').single();
+    userCredits = insertResult.data ? insertResult.data.credits : 10;
+  } else {
+    userCredits = profileResult.data.credits;
+  }
+
+  updateDisplay();
 }
 
-function updateCreditDisplay() {
-  document.getElementById('navCredits').textContent  = userCredits;
+function updateDisplay() {
+  document.getElementById('navCredits').textContent    = userCredits;
   document.getElementById('creditsDisplay').textContent = userCredits;
-  document.getElementById('creditsUsed').textContent = (10 - userCredits);
-  document.getElementById('imagesCount').textContent = imagesCount;
-  document.getElementById('videosCount').textContent = videosCount;
-  const noCredits = document.getElementById('noCreditsMsg');
+  document.getElementById('creditsUsed').textContent   = (10 - userCredits);
+  document.getElementById('imagesCount').textContent   = imagesCount;
+  document.getElementById('videosCount').textContent   = videosCount;
+
+  var noCredits = document.getElementById('noCreditsMsg');
   noCredits.style.display = userCredits <= 0 ? 'block' : 'none';
 
-  const imgBtn = document.getElementById('runImageBtn');
-  const vidBtn = document.getElementById('runVideoBtn');
   if (userCredits <= 0) {
-    imgBtn.disabled = true; imgBtn.textContent = 'No credits remaining';
-    vidBtn.disabled = true; vidBtn.textContent = 'No credits remaining';
+    document.getElementById('runImageBtn').disabled = true;
+    document.getElementById('runImageBtn').textContent = 'No credits remaining';
+    document.getElementById('runVideoBtn').disabled = true;
+    document.getElementById('runVideoBtn').textContent = 'No credits remaining';
   }
 }
 
-// ── UPLOAD HANDLERS ──
 function handleImageUpload(input) {
   if (!input.files[0]) return;
   selectedImage = input.files[0];
-  const area = document.getElementById('imageUploadArea');
-  area.querySelector('.upload-label').innerHTML = `<span>${selectedImage.name}</span><br/>${(selectedImage.size/1024/1024).toFixed(1)}MB`;
-  const btn = document.getElementById('runImageBtn');
-  if (userCredits >= 1) { btn.disabled = false; btn.textContent = 'Run Analysis · 1 Credit →'; }
+  document.getElementById('imageUploadArea').querySelector('.upload-label').innerHTML =
+    '<span>' + selectedImage.name + '</span><br/>' + (selectedImage.size/1024/1024).toFixed(1) + 'MB';
+  if (userCredits >= 1) {
+    document.getElementById('runImageBtn').disabled = false;
+    document.getElementById('runImageBtn').textContent = 'Run Analysis - 1 Credit';
+  }
 }
 
 function handleVideoUpload(input) {
   if (!input.files[0]) return;
   selectedVideo = input.files[0];
-  const area = document.getElementById('videoUploadArea');
-  area.querySelector('.upload-label').innerHTML = `<span>${selectedVideo.name}</span><br/>${(selectedVideo.size/1024/1024).toFixed(1)}MB`;
-  const btn = document.getElementById('runVideoBtn');
-  if (userCredits >= 2) { btn.disabled = false; btn.textContent = 'Run Analysis · 2 Credits →'; }
-  else if (userCredits === 1) { btn.disabled = true; btn.textContent = 'Need 2 credits (have 1)'; }
+  document.getElementById('videoUploadArea').querySelector('.upload-label').innerHTML =
+    '<span>' + selectedVideo.name + '</span><br/>' + (selectedVideo.size/1024/1024).toFixed(1) + 'MB';
+  if (userCredits >= 2) {
+    document.getElementById('runVideoBtn').disabled = false;
+    document.getElementById('runVideoBtn').textContent = 'Run Analysis - 2 Credits';
+  } else if (userCredits === 1) {
+    document.getElementById('runVideoBtn').disabled = true;
+    document.getElementById('runVideoBtn').textContent = 'Need 2 credits (have 1)';
+  }
 }
 
-// Drag and drop
-['imageUploadArea','videoUploadArea'].forEach(id => {
-  const el = document.getElementById(id);
-  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
-  el.addEventListener('dragleave', () => el.classList.remove('dragover'));
-  el.addEventListener('drop', e => {
-    e.preventDefault(); el.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-    if (id === 'imageUploadArea') { document.getElementById('imageInput').files = e.dataTransfer.files; handleImageUpload(document.getElementById('imageInput')); }
-    else { document.getElementById('videoInput').files = e.dataTransfer.files; handleVideoUpload(document.getElementById('videoInput')); }
+function addToHistory(name, type, credits) {
+  analysisHistory.push({
+    name: name,
+    type: type,
+    credits: credits,
+    date: new Date().toLocaleDateString(),
+    status: 'Complete'
   });
-});
+  document.getElementById('historyEmpty').style.display = 'none';
+  document.getElementById('historyTable').style.display = 'table';
+  var rows = analysisHistory.slice().reverse().map(function(h) {
+    return '<tr><td>' + h.name + '</td><td>' + h.type + '</td><td>' + h.credits + '</td><td>' + h.date + '</td><td style="color:var(--green);">' + h.status + '</td></tr>';
+  });
+  document.getElementById('historyBody').innerHTML = rows.join('');
+}
 
-// ── RUN ANALYSIS ──
-document.getElementById('runImageBtn').addEventListener('click', async () => {
+function showIframeResult() {
+  var existing = document.getElementById('irisResult');
+  if (existing) existing.remove();
+  var div = document.createElement('div');
+  div.id = 'irisResult';
+  div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:24px;';
+  div.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">IRIS Live</div>' +
+    '<iframe src="' + HF_SPACE + '" style="width:100%;height:600px;border:none;"></iframe>';
+  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+}
+
+document.getElementById('runImageBtn').addEventListener('click', async function() {
   if (!selectedImage || userCredits < 1) return;
-  const btn = document.getElementById('runImageBtn');
+  var btn = document.getElementById('runImageBtn');
   btn.disabled = true;
-  btn.textContent = 'Deducting credit ...';
+  btn.textContent = 'Deducting credit...';
 
-  // Deduct credit first
-  const { error } = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 1 });
-  if (error) {
+  var deductResult = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 1 });
+  if (deductResult.error) {
     btn.disabled = false;
-    btn.textContent = 'Run Analysis · 1 Credit →';
-    alert('Error: ' + error.message);
+    btn.textContent = 'Run Analysis - 1 Credit';
+    alert('Error: ' + deductResult.error.message);
     return;
   }
+
   userCredits -= 1;
   imagesCount += 1;
-  updateCreditDisplay();
+  updateDisplay();
+  btn.textContent = 'Running IRIS...';
 
-  // Send to IRIS on Hugging Face
-  btn.textContent = 'Running IRIS ...';
   try {
-    const formData = new FormData();
-    formData.append('data', selectedImage);
-
-    const resp = await fetch('https://privateuser1234-iris.hf.space/run/predict', {
-      method: 'POST',
-      body: JSON.stringify({
-        fn_index: 0,
-        data: [await toBase64(selectedImage)]
-      }),
-      headers: { 'Content-Type': 'application/json' }
+    var base64 = await new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload  = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(selectedImage);
     });
 
-    const result = await resp.json();
-    const heatmapData = result.data[0];
-    const metricsText = result.data[1];
+    var resp = await fetch(HF_SPACE + '/run/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fn_index: 0, data: [base64] })
+    });
 
-    // Show result
-    showImageResult(heatmapData, metricsText, selectedImage.name);
-    addHistory(selectedImage.name, 'Image', 1);
-    btn.textContent = 'Analysis complete ✓';
+    var result = await resp.json();
+    var heatmap = result.data[0];
+    var metrics = result.data[1];
+
+    var existing = document.getElementById('irisResult');
+    if (existing) existing.remove();
+    var div = document.createElement('div');
+    div.id = 'irisResult';
+    div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;margin-top:24px;';
+    div.innerHTML = '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">IRIS Result</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">' +
+      '<div><div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Heatmap</div>' +
+      '<img src="' + (heatmap.url || heatmap) + '" style="width:100%;border-radius:10px;border:1px solid var(--border);"/></div>' +
+      '<div><div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Metrics</div>' +
+      '<pre style="font-size:12px;color:var(--text);line-height:1.8;white-space:pre-wrap;">' + metrics + '</pre></div></div>';
+    document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+
+    addToHistory(selectedImage.name, 'Image', 1);
+    btn.textContent = 'Analysis complete';
   } catch(err) {
-    addHistory(selectedImage.name, 'Image', 1);
-    btn.textContent = 'Analysis complete ✓';
+    addToHistory(selectedImage.name, 'Image', 1);
+    btn.textContent = 'Analysis complete';
     showIframeResult();
   }
   selectedImage = null;
 });
 
-document.getElementById('runVideoBtn').addEventListener('click', async () => {
+document.getElementById('runVideoBtn').addEventListener('click', async function() {
   if (!selectedVideo || userCredits < 2) return;
-  const btn = document.getElementById('runVideoBtn');
+  var btn = document.getElementById('runVideoBtn');
   btn.disabled = true;
-  btn.textContent = 'Deducting credits ...';
+  btn.textContent = 'Deducting credits...';
 
-  const { error } = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 2 });
-  if (error) {
+  var deductResult = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 2 });
+  if (deductResult.error) {
     btn.disabled = false;
-    btn.textContent = 'Run Analysis · 2 Credits →';
-    alert('Error: ' + error.message);
+    btn.textContent = 'Run Analysis - 2 Credits';
+    alert('Error: ' + deductResult.error.message);
     return;
   }
+
   userCredits -= 2;
   videosCount += 1;
-  updateCreditDisplay();
-  addHistory(selectedVideo.name, 'Video', 2);
-  btn.textContent = 'Submitted — opening IRIS ...';
+  updateDisplay();
+  addToHistory(selectedVideo.name, 'Video', 2);
 
-  // Open HF Space in new tab for video processing
-  window.open('https://privateuser1234-iris.hf.space', '_blank');
-  btn.textContent = 'Video submitted ✓';
+  var existing = document.getElementById('irisResult');
+  if (existing) existing.remove();
+  var div = document.createElement('div');
+  div.id = 'irisResult';
+  div.style.cssText = 'background:var(--bg2);border:1px solid rgba(56,189,248,0.2);border-radius:16px;padding:32px;margin-top:24px;';
+  div.innerHTML = '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Video Submitted</div>' +
+    '<div style="font-family:\'Instrument Serif\',serif;font-size:28px;letter-spacing:-1px;margin-bottom:12px;">Check your <em style="color:var(--accent);">email.</em></div>' +
+    '<div style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:24px;">IRIS is processing your video frame by frame. In the tab that just opened, enter your email to receive results. Processing takes 5-15 minutes.</div>' +
+    '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:12px;color:var(--muted);line-height:1.8;">' +
+    '1. Click the Video Analysis tab<br/>2. Upload your video<br/>3. Enter your email<br/>4. Click Submit<br/>5. Check your email when done</div>';
+  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+
+  window.open(HF_SPACE, '_blank');
+  btn.textContent = 'Video submitted';
   selectedVideo = null;
 });
 
-// ── HISTORY ──
-function addHistory(name, type, credits) {
-  history.push({ name, type, credits, date: new Date().toLocaleDateString(), status: 'Complete' });
-  renderHistory();
-}
+document.getElementById('signOutBtn').addEventListener('click', async function() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+});
 
-function renderHistory() {
-  if (!history.length) return;
-  document.getElementById('historyEmpty').style.display = 'none';
-  document.getElementById('historyTable').style.display = 'table';
-  document.getElementById('historyBody').innerHTML = history.slice().reverse().map(h => `
-    <tr>
-      <td>${h.name}</td>
-      <td style="color:${h.type==='Video'?'var(--accent)':'var(--muted)'};">${h.type}</td>
-      <td>${h.credits}</td>
-      <td>${h.date}</td>
-      <td style="color:var(--green);">${h.status}</td>
-    </tr>
-  `).join('');
-}
+['imageUploadArea','videoUploadArea'].forEach(function(id) {
+  var el = document.getElementById(id);
+  el.addEventListener('dragover', function(e) { e.preventDefault(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', function() { el.classList.remove('dragover'); });
+  el.addEventListener('drop', function(e) {
+    e.preventDefault();
+    el.classList.remove('dragover');
+    var file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (id === 'imageUploadArea') {
+      document.getElementById('imageInput').files = e.dataTransfer.files;
+      handleImageUpload(document.getElementById('imageInput'));
+    } else {
+      document.getElementById('videoInput').files = e.dataTransfer.files;
+      handleVideoUpload(document.getElementById('videoInput'));
+    }
+  });
+});
 
-// ── SIGN OUT ──
-document.getElementById('signOutBtn').ad
+init();
+</script>
+</body>
+</html>
