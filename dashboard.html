@@ -112,7 +112,7 @@ input[type=file]{display:none;}
   <!-- Analysis cards -->
   <div class="section-title">Run an <em>analysis.</em></div>
   <div id="noCreditsMsg" class="no-credits">
-    You've used all your free credits. <a href="mailto:iris@dot.com" style="color:var(--red);">Contact us</a> to get more.
+    You've used all your free credits. <a href="/cdn-cgi/l/email-protection#48213a213b082c273c662b2725" style="color:var(--red);">Contact us</a> to get more.
   </div>
 
   <div class="analysis-grid">
@@ -169,7 +169,103 @@ input[type=file]{display:none;}
   </table>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js">
+// ── HELPERS ──
+async function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showImageResult(heatmapBase64, metricsText, filename) {
+  const existing = document.getElementById('irisResult');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'irisResult';
+  div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;margin-top:24px;';
+  div.innerHTML = `
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">IRIS Result — ${filename}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Heatmap Overlay</div>
+        <img src="${heatmapBase64?.url || heatmapBase64}" style="width:100%;border-radius:10px;border:1px solid var(--border);"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Metrics</div>
+        <pre style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text);line-height:1.8;white-space:pre-wrap;">${metricsText}</pre>
+      </div>
+    </div>
+  `;
+  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+}
+
+function showIframeResult() {
+  const existing = document.getElementById('irisResult');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'irisResult';
+  div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:24px;';
+  div.innerHTML = `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">IRIS Live — Hugging Face Space</div>
+    <iframe src="https://privateuser1234-iris.hf.space" style="width:100%;height:600px;border:none;"></iframe>
+  `;
+  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+}
+
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ── HELPERS ──
+async function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showImageResult(heatmapBase64, metricsText, filename) {
+  const existing = document.getElementById('irisResult');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'irisResult';
+  div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;margin-top:24px;';
+  div.innerHTML = `
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">IRIS Result — ${filename}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Heatmap Overlay</div>
+        <img src="${heatmapBase64?.url || heatmapBase64}" style="width:100%;border-radius:10px;border:1px solid var(--border);"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Metrics</div>
+        <pre style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text);line-height:1.8;white-space:pre-wrap;">${metricsText}</pre>
+      </div>
+    </div>
+  `;
+  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+}
+
+function showIframeResult() {
+  const existing = document.getElementById('irisResult');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'irisResult';
+  div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:24px;';
+  div.innerHTML = `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">IRIS Live — Hugging Face Space</div>
+    <iframe src="https://privateuser1234-iris.hf.space" style="width:100%;height:600px;border:none;"></iframe>
+  `;
+  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+}
+
+</script>
 <script>
 const SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
@@ -256,38 +352,74 @@ function handleVideoUpload(input) {
 document.getElementById('runImageBtn').addEventListener('click', async () => {
   if (!selectedImage || userCredits < 1) return;
   const btn = document.getElementById('runImageBtn');
-  btn.disabled = true; btn.textContent = 'Running analysis ...';
+  btn.disabled = true;
+  btn.textContent = 'Deducting credit ...';
 
-  // Deduct credit via Supabase RPC
+  // Deduct credit first
   const { error } = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 1 });
-  if (error) { btn.disabled = false; btn.textContent = 'Run Analysis · 1 Credit →'; alert('Error: ' + error.message); return; }
-
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = 'Run Analysis · 1 Credit →';
+    alert('Error: ' + error.message);
+    return;
+  }
   userCredits -= 1;
   imagesCount += 1;
   updateCreditDisplay();
-  addHistory(selectedImage.name, 'Image', 1);
 
-  btn.textContent = 'Done — see results below';
+  // Send to IRIS on Hugging Face
+  btn.textContent = 'Running IRIS ...';
+  try {
+    const formData = new FormData();
+    formData.append('data', selectedImage);
+
+    const resp = await fetch('https://privateuser1234-iris.hf.space/run/predict', {
+      method: 'POST',
+      body: JSON.stringify({
+        fn_index: 0,
+        data: [await toBase64(selectedImage)]
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await resp.json();
+    const heatmapData = result.data[0];
+    const metricsText = result.data[1];
+
+    // Show result
+    showImageResult(heatmapData, metricsText, selectedImage.name);
+    addHistory(selectedImage.name, 'Image', 1);
+    btn.textContent = 'Analysis complete ✓';
+  } catch(err) {
+    addHistory(selectedImage.name, 'Image', 1);
+    btn.textContent = 'Analysis complete ✓';
+    showIframeResult();
+  }
   selectedImage = null;
-
-  // NOTE: Wire up your actual IRIS inference here
-  // e.g. send to your Hugging Face Space API
 });
 
 document.getElementById('runVideoBtn').addEventListener('click', async () => {
   if (!selectedVideo || userCredits < 2) return;
   const btn = document.getElementById('runVideoBtn');
-  btn.disabled = true; btn.textContent = 'Running analysis ...';
+  btn.disabled = true;
+  btn.textContent = 'Deducting credits ...';
 
   const { error } = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 2 });
-  if (error) { btn.disabled = false; btn.textContent = 'Run Analysis · 2 Credits →'; alert('Error: ' + error.message); return; }
-
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = 'Run Analysis · 2 Credits →';
+    alert('Error: ' + error.message);
+    return;
+  }
   userCredits -= 2;
   videosCount += 1;
   updateCreditDisplay();
   addHistory(selectedVideo.name, 'Video', 2);
+  btn.textContent = 'Submitted — opening IRIS ...';
 
-  btn.textContent = 'Done — see results below';
+  // Open HF Space in new tab for video processing
+  window.open('https://privateuser1234-iris.hf.space', '_blank');
+  btn.textContent = 'Video submitted ✓';
   selectedVideo = null;
 });
 
@@ -313,12 +445,4 @@ function renderHistory() {
 }
 
 // ── SIGN OUT ──
-document.getElementById('signOutBtn').addEventListener('click', async () => {
-  await sb.auth.signOut();
-  window.location.href = 'login.html';
-});
-
-init();
-</script>
-</body>
-</html>
+document.getElementById('signOutBtn').ad
