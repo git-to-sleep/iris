@@ -165,6 +165,7 @@ input[type=file]{display:none;}
 var SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
 var SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
 var HF_SPACE      = 'https://privateuser1234-iris.hf.space';
+var CF_WORKER     = 'https://irishug.irisbydot.workers.dev';
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 var currentUser   = null;
@@ -176,16 +177,12 @@ var selectedVideo = null;
 var analysisHistory = [];
 
 async function init() {
-  document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>connecting...</em>';
   var sessionData = await sb.auth.getSession();
   var session = sessionData.data.session;
-  document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>checking session...</em>';
   if (!session) {
-    document.getElementById('welcomeTitle').innerHTML = 'No session found.<br/><em><a href="login.html" style="color:var(--accent);">Sign in again</a></em>';
-    setTimeout(function() { window.location.href = 'login.html'; }, 2000);
+    window.location.href = 'login.html';
     return;
   }
-  document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>loading profile...</em>';
 
   currentUser = session.user;
   document.getElementById('navEmail').textContent = currentUser.email;
@@ -201,7 +198,6 @@ async function init() {
   var profileResult = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
 
   if (profileResult.error || !profileResult.data) {
-    document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>creating profile...</em>';
     var insertResult = await sb.from('profiles').insert({
       id: currentUser.id,
       email: currentUser.email,
@@ -312,7 +308,7 @@ document.getElementById('runImageBtn').addEventListener('click', async function(
       reader.readAsDataURL(selectedImage);
     });
 
-    var resp = await fetch(HF_SPACE + '/run/predict', {
+    var resp = await fetch(CF_WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fn_index: 0, data: [base64] })
