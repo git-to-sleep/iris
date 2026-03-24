@@ -62,6 +62,24 @@ main{max-width:1100px;margin:0 auto;padding:60px 48px;}
 .upload-label{font-size:12px;color:var(--muted);line-height:1.8;}
 .upload-label span{color:var(--accent);}
 input[type=file]{display:none;}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px;width:100%;max-width:480px;position:relative;}
+.modal-title{font-family:'Instrument Serif',serif;font-size:32px;font-weight:400;letter-spacing:-1px;margin-bottom:8px;}
+.modal-title em{color:var(--accent);font-style:italic;}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:32px;line-height:1.8;}
+.modal-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:13px 16px;font-family:'Geist Mono',monospace;font-size:13px;outline:none;transition:border .15s;margin-bottom:12px;}
+.modal-input:focus{border-color:rgba(56,189,248,0.4);}
+.modal-input::placeholder{color:var(--muted);}
+.modal-btn{width:100%;padding:14px;background:var(--text);color:var(--bg);border:none;border-radius:8px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;}
+.modal-btn:hover{opacity:.85;}
+.modal-btn:disabled{opacity:.4;cursor:not-allowed;}
+.modal-cancel{width:100%;padding:10px;background:transparent;color:var(--muted);border:none;font-family:'Geist Mono',monospace;font-size:11px;cursor:pointer;margin-top:8px;}
+.modal-cancel:hover{color:var(--text);}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:16px;display:none;}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;}
+
 </style>
 </head>
 <body>
@@ -158,6 +176,20 @@ input[type=file]{display:none;}
     </thead>
     <tbody id="historyBody"></tbody>
   </table>
+
+<!-- Video email modal -->
+<div class="modal-overlay" id="videoModal">
+  <div class="modal">
+    <div class="modal-title">Enter your <em>email.</em></div>
+    <div class="modal-sub" id="videoModalSub">We will email you when your video analysis is complete. Processing takes 5-15 minutes.</div>
+    <div id="videoModalError" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);color:var(--red);border-radius:8px;padding:12px 16px;font-size:12px;margin-bottom:16px;display:none;"></div>
+    <input type="email" class="modal-input" id="videoEmail" placeholder="you@company.com"/>
+    <div class="progress-bar" id="videoProgress"><div class="progress-fill" id="videoProgressFill" style="width:0%"></div></div>
+    <button class="modal-btn" id="videoSubmitBtn">Upload and Process Video</button>
+    <button class="modal-cancel" id="videoCancelBtn">Cancel</button>
+  </div>
+</div>
+
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -347,10 +379,14 @@ document.getElementById('runVideoBtn').addEventListener('click', async function(
   btn.disabled = true;
   btn.textContent = 'Deducting credits...';
 
+  // Open tab immediately on click — Safari blocks window.open after async calls
+  var newTab = window.open(HF_SPACE, '_blank');
+
   var deductResult = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 2 });
   if (deductResult.error) {
     btn.disabled = false;
     btn.textContent = 'Run Analysis - 2 Credits';
+    if (newTab) newTab.close();
     alert('Error: ' + deductResult.error.message);
     return;
   }
@@ -372,7 +408,6 @@ document.getElementById('runVideoBtn').addEventListener('click', async function(
     '1. Click the Video Analysis tab<br/>2. Upload your video<br/>3. Enter your email<br/>4. Click Submit<br/>5. Check your email when done</div>';
   document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
 
-  window.open(HF_SPACE, '_blank');
   btn.textContent = 'Video submitted';
   selectedVideo = null;
 });
