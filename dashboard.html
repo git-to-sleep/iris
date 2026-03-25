@@ -197,7 +197,6 @@ input[type=file]{display:none;}
 <script>
 const SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
-const CF_WORKER     = 'https://irishug.irisbydot.workers.dev';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const { createFFmpeg, fetchFile } = FFmpeg;
@@ -215,18 +214,14 @@ async function init() {
   if (!session) { window.location.href = 'login.html'; return; }
   currentUser = session.user;
 
-  // Profile Data
   const { data: p } = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
   userCredits = p?.credits ?? 10;
 
-  // UI Setup
   document.getElementById('navEmail').textContent = currentUser.email;
   const firstName = currentUser.user_metadata?.first_name || currentUser.email.split('@')[0];
   document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>' + firstName + '.</em>';
   
   updateDisplay();
-  
-  // SECURE REFUND CHECK
   handleSecureRefund();
 }
 
@@ -234,35 +229,18 @@ async function handleSecureRefund() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') !== 'refund') return;
 
-    console.log("Validating secure refund ticket...");
-
-    // 1. Verify ticket exists
-    const { data: tickets, error } = await sb
-        .from('refund_tickets')
-        .select('id')
-        .eq('user_id', currentUser.id)
-        .limit(1);
+    const { data: tickets } = await sb.from('refund_tickets').select('id').eq('user_id', currentUser.id).limit(1);
 
     if (tickets && tickets.length > 0) {
         const ticketId = tickets[0].id;
-
-        // 2. Grant credits via RPC
-        const { error: rpcError } = await sb.rpc('deduct_credit', {
-            user_id: currentUser.id,
-            amount: -2 // Adds 2
-        });
-
+        const { error: rpcError } = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: -2 });
         if (!rpcError) {
-            // 3. Delete ticket (One-time use)
             await sb.from('refund_tickets').delete().eq('id', ticketId);
-            
-            alert("✓ System Error Authenticated. 2 Credits have been refunded to your account.");
+            alert("✓ System Error Authenticated. 2 Credits have been refunded.");
             window.history.replaceState({}, document.title, "/dashboard"); 
             userCredits += 2;
             updateDisplay();
         }
-    } else {
-        console.warn("No valid refund ticket found in vault.");
     }
 }
 
@@ -272,10 +250,7 @@ function updateDisplay() {
   document.getElementById('creditsUsed').textContent = (10 - userCredits);
   document.getElementById('imagesCount').textContent = imagesCount;
   document.getElementById('videosCount').textContent = videosCount;
-  
-  if(userCredits <= 0) {
-      document.getElementById('noCreditsMsg').style.display = 'block';
-  }
+  if(userCredits <= 0) document.getElementById('noCreditsMsg').style.display = 'block';
 }
 
 function handleImageUpload(input) {
@@ -283,7 +258,6 @@ function handleImageUpload(input) {
   selectedImage = input.files[0];
   document.getElementById('imageUploadArea').querySelector('.upload-label').innerHTML = `<span>${selectedImage.name}</span><br/>${(selectedImage.size/1024/1024).toFixed(1)}MB`;
   document.getElementById('runImageBtn').disabled = userCredits < 1;
-  document.getElementById('runImageBtn').innerText = "Run Image Analysis";
 }
 
 function handleVideoUpload(input) {
@@ -291,7 +265,6 @@ function handleVideoUpload(input) {
   selectedVideo = input.files[0];
   document.getElementById('videoUploadArea').querySelector('.upload-label').innerHTML = `<span>${selectedVideo.name}</span><br/>${(selectedVideo.size/1024/1024).toFixed(1)}MB`;
   document.getElementById('runVideoBtn').disabled = userCredits < 2;
-  document.getElementById('runVideoBtn').innerText = "Run Video Analysis";
 }
 
 document.getElementById('runVideoBtn').addEventListener('click', () => {
@@ -315,9 +288,9 @@ document.getElementById('videoSubmitBtn').addEventListener('click', async functi
   try {
     let finalFile = selectedVideo;
 
-    // 1. COMPRESSION (If needed)
+    // 1. COMPRESSION
     if (selectedVideo.size > 48 * 1024 * 1024) {
-      log.innerText = "Video > 50MB. Starting neural compression...";
+      log.innerText = "Neural compression starting...";
       if (!ffmpeg.isLoaded()) await ffmpeg.load();
       ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(selectedVideo));
       await ffmpeg.run('-i', 'input.mp4', '-b:v', '1200k', '-preset', 'ultrafast', 'output.mp4');
@@ -338,19 +311,22 @@ document.getElementById('videoSubmitBtn').addEventListener('click', async functi
     const { error: uErr } = await sb.storage.from('analyses').upload(path, finalFile);
     if (uErr) throw uErr;
 
-    // 4. SIGNED URL
+    // 4. GET URL & CREATE PENDING TASK (New Polling Step)
     fill.style.width = '80%';
-    log.innerText = "Creating secure tunnel...";
-    const { data: sData, error: sErr } = await sb.storage.from('analyses').createSignedUrl(path, 600);
-    if (sErr || !sData) throw new Error("Storage tunnel failed.");
+    log.innerText = "Queuing AI analysis...";
+    const { data: { publicUrl } } = sb.storage.from('analyses').getPublicUrl(path);
+    
+    const { error: taskErr } = await sb.from('analyses').insert([{
+        user_email: email,
+        file_url: publicUrl,
+        status: 'pending'
+    }]);
 
-    // 5. WORKER HANDOFF
-    await fetch(CF_WORKER, { method: 'POST', body: JSON.stringify({ url: sData.signedUrl, email: email }) });
+    if (taskErr) throw taskErr;
 
     fill.style.width = '100%';
-    log.innerText = "Success! Analysis in progress.";
+    log.innerText = "Success! Polling service has accepted the task.";
     userCredits -= 2; videosCount++; updateDisplay();
-    
     setTimeout(() => { document.getElementById('videoModal').classList.remove('show'); }, 1500);
 
   } catch (err) {
