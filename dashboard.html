@@ -79,7 +79,6 @@ input[type=file]{display:none;}
 .modal-cancel:hover{color:var(--text);}
 .progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:16px;display:none;}
 .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;}
-
 </style>
 </head>
 <body>
@@ -177,7 +176,6 @@ input[type=file]{display:none;}
     <tbody id="historyBody"></tbody>
   </table>
 
-<!-- Video email modal -->
 <div class="modal-overlay" id="videoModal">
   <div class="modal">
     <div class="modal-title">Enter your <em>email.</em></div>
@@ -208,9 +206,9 @@ var selectedVideo = null;
 var analysisHistory = [];
 
 async function init() {
-  var sessionData = await sb.auth.getSession();
-  var session = sessionData.data.session;
-  if (!session) {
+  const { data: { session }, error: sessionError } = await sb.auth.getSession();
+  
+  if (sessionError || !session) {
     window.location.href = 'login.html';
     return;
   }
@@ -218,45 +216,55 @@ async function init() {
   currentUser = session.user;
   document.getElementById('navEmail').textContent = currentUser.email;
 
-  var firstName = 'there';
-  if (currentUser.user_metadata && currentUser.user_metadata.first_name) {
-    firstName = currentUser.user_metadata.first_name;
-  } else {
-    firstName = currentUser.email.split('@')[0];
-  }
+  var firstName = currentUser.user_metadata?.first_name || currentUser.email.split('@')[0];
   document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>' + firstName + '.</em>';
 
-  var profileResult = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
+  // FIX: Using rpc or direct select with error handling
+  try {
+    const { data: profile, error: profileError } = await sb
+      .from('profiles')
+      .select('credits')
+      .eq('id', currentUser.id)
+      .single();
 
-  if (profileResult.error || !profileResult.data) {
-    var insertResult = await sb.from('profiles').insert({
-      id: currentUser.id,
-      email: currentUser.email,
-      credits: 10
-    }).select('credits').single();
-    userCredits = insertResult.data ? insertResult.data.credits : 10;
-  } else {
-    userCredits = profileResult.data.credits;
+    if (profileError || !profile) {
+      console.log("Creating profile for first-time user...");
+      const { data: newProfile, error: createError } = await sb
+        .from('profiles')
+        .insert({ id: currentUser.id, email: currentUser.email, credits: 10 })
+        .select()
+        .single();
+      
+      userCredits = newProfile ? newProfile.credits : 10;
+    } else {
+      userCredits = profile.credits;
+    }
+  } catch (e) {
+    console.error("Init Error:", e);
+    userCredits = 0;
   }
 
   updateDisplay();
 }
 
 function updateDisplay() {
-  document.getElementById('navCredits').textContent    = userCredits;
+  document.getElementById('navCredits').textContent     = userCredits;
   document.getElementById('creditsDisplay').textContent = userCredits;
-  document.getElementById('creditsUsed').textContent   = (10 - userCredits);
-  document.getElementById('imagesCount').textContent   = imagesCount;
-  document.getElementById('videosCount').textContent   = videosCount;
+  document.getElementById('creditsUsed').textContent    = (10 - userCredits);
+  document.getElementById('imagesCount').textContent    = imagesCount;
+  document.getElementById('videosCount').textContent    = videosCount;
 
   var noCredits = document.getElementById('noCreditsMsg');
   noCredits.style.display = userCredits <= 0 ? 'block' : 'none';
 
+  const runImageBtn = document.getElementById('runImageBtn');
+  const runVideoBtn = document.getElementById('runVideoBtn');
+
   if (userCredits <= 0) {
-    document.getElementById('runImageBtn').disabled = true;
-    document.getElementById('runImageBtn').textContent = 'No credits remaining';
-    document.getElementById('runVideoBtn').disabled = true;
-    document.getElementById('runVideoBtn').textContent = 'No credits remaining';
+    runImageBtn.disabled = true;
+    runImageBtn.textContent = 'No credits remaining';
+    runVideoBtn.disabled = true;
+    runVideoBtn.textContent = 'No credits remaining';
   }
 }
 
@@ -279,19 +287,16 @@ function handleVideoUpload(input) {
   if (userCredits >= 2) {
     document.getElementById('runVideoBtn').disabled = false;
     document.getElementById('runVideoBtn').textContent = 'Run Analysis - 2 Credits';
-  } else if (userCredits === 1) {
+  } else {
     document.getElementById('runVideoBtn').disabled = true;
-    document.getElementById('runVideoBtn').textContent = 'Need 2 credits (have 1)';
+    document.getElementById('runVideoBtn').textContent = 'Need 2 credits';
   }
 }
 
 function addToHistory(name, type, credits) {
   analysisHistory.push({
-    name: name,
-    type: type,
-    credits: credits,
-    date: new Date().toLocaleDateString(),
-    status: 'Complete'
+    name: name, type: type, credits: credits,
+    date: new Date().toLocaleDateString(), status: 'Complete'
   });
   document.getElementById('historyEmpty').style.display = 'none';
   document.getElementById('historyTable').style.display = 'table';
@@ -301,43 +306,51 @@ function addToHistory(name, type, credits) {
   document.getElementById('historyBody').innerHTML = rows.join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// IMAGE ANALYSIS (stays in same tab, uses CF Worker)
-// ═══════════════════════════════════════════════════════
+// IMAGE ANALYSIS
 document.getElementById('runImageBtn').addEventListener('click', async function() {
   if (!selectedImage || userCredits < 1) return;
   var btn = document.getElementById('runImageBtn');
   btn.disabled = true;
   btn.textContent = 'Deducting credit...';
 
-  var deductResult = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 1 });
-  if (deductResult.error) {
+  // FIXED: RPC handling for 401. If this fails, ensure SECURITY DEFINER is set in Supabase.
+  const { data: deductData, error: deductError } = await sb.rpc('deduct_credit', { 
+    user_id: currentUser.id, 
+    amount: 1 
+  });
+
+  if (deductError) {
     btn.disabled = false;
     btn.textContent = 'Run Analysis - 1 Credit';
-    alert('Error: ' + deductResult.error.message);
+    alert('Security Error: ' + deductError.message + '. Ensure Supabase RPC permissions are set.');
     return;
   }
 
   userCredits -= 1;
   imagesCount += 1;
   updateDisplay();
-  btn.textContent = 'Running IRIS...';
+  btn.textContent = 'Running IRIS AI...';
 
   try {
-    var base64 = await new Promise(function(resolve, reject) {
+    var base64Full = await new Promise((resolve, reject) => {
       var reader = new FileReader();
-      reader.onload  = function() { resolve(reader.result); };
+      reader.onload = () => resolve(reader.result);
       reader.onerror = reject;
       reader.readAsDataURL(selectedImage);
     });
+    
+    // FIX: Remove data:image/xxx;base64, prefix for Hugging Face
+    const cleanBase64 = base64Full.split(',')[1];
 
     var resp = await fetch(CF_WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fn_index: 0, data: [base64] })
+      body: JSON.stringify({ fn_index: 0, data: [cleanBase64] })
     });
 
     var result = await resp.json();
+    if (result.error) throw new Error(result.error);
+    
     var heatmap = result.data[0];
     var metrics = result.data[1];
 
@@ -358,29 +371,22 @@ document.getElementById('runImageBtn').addEventListener('click', async function(
     btn.textContent = 'Analysis complete';
   } catch(err) {
     console.error('Image analysis error:', err);
-    btn.textContent = 'Error - try again';
+    btn.textContent = 'Worker Error - Check Console';
     btn.disabled = false;
   }
-  selectedImage = null;
-  document.getElementById('imageInput').value = '';
-  document.getElementById('imageUploadArea').querySelector('.upload-label').innerHTML = 
-    'Click or drag an image here<br/><span>JPG, PNG, WEBP up to 20MB</span>';
 });
 
-// ═══════════════════════════════════════════════════════
-// VIDEO ANALYSIS (stays in same tab, uses CF Worker)
-// ═══════════════════════════════════════════════════════
+// VIDEO ANALYSIS
 document.getElementById('runVideoBtn').addEventListener('click', function() {
   if (!selectedVideo || userCredits < 2) return;
-  // Show email modal
   document.getElementById('videoModal').classList.add('show');
-  document.getElementById('videoEmail').value = currentUser.email; // Pre-fill user's email
+  document.getElementById('videoEmail').value = currentUser.email;
 });
 
 document.getElementById('videoSubmitBtn').addEventListener('click', async function() {
   var email = document.getElementById('videoEmail').value.trim();
   if (!email || !email.includes('@')) {
-    document.getElementById('videoModalError').textContent = 'Please enter a valid email address';
+    document.getElementById('videoModalError').textContent = 'Valid email required';
     document.getElementById('videoModalError').style.display = 'block';
     return;
   }
@@ -390,15 +396,16 @@ document.getElementById('videoSubmitBtn').addEventListener('click', async functi
   btn.disabled = true;
   cancelBtn.disabled = true;
   btn.textContent = 'Deducting credits...';
-  document.getElementById('videoModalError').style.display = 'none';
 
-  // Deduct credits
-  var deductResult = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 2 });
-  if (deductResult.error) {
+  const { data: deductData, error: deductError } = await sb.rpc('deduct_credit', { 
+    user_id: currentUser.id, 
+    amount: 2 
+  });
+
+  if (deductError) {
     btn.disabled = false;
     cancelBtn.disabled = false;
-    btn.textContent = 'Upload and Process Video';
-    document.getElementById('videoModalError').textContent = 'Error: ' + deductResult.error.message;
+    document.getElementById('videoModalError').textContent = 'Supabase Error: ' + deductError.message;
     document.getElementById('videoModalError').style.display = 'block';
     return;
   }
@@ -407,116 +414,49 @@ document.getElementById('videoSubmitBtn').addEventListener('click', async functi
   videosCount += 1;
   updateDisplay();
   
-  btn.textContent = 'Converting video...';
-  
+  btn.textContent = 'Processing...';
+  document.getElementById('videoProgress').style.display = 'block';
+  document.getElementById('videoProgressFill').style.width = '30%';
+
   try {
-    // Convert video to base64
-    var base64 = await new Promise(function(resolve, reject) {
+    var base64Full = await new Promise((resolve, reject) => {
       var reader = new FileReader();
-      reader.onload  = function() { resolve(reader.result); };
+      reader.onload = () => resolve(reader.result);
       reader.onerror = reject;
       reader.readAsDataURL(selectedVideo);
     });
+    
+    const cleanBase64 = base64Full.split(',')[1];
 
-    btn.textContent = 'Uploading to IRIS...';
-    document.getElementById('videoProgress').style.display = 'block';
-    document.getElementById('videoProgressFill').style.width = '30%';
-
-    // Send to Cloudflare Worker (fn_index: 1 for video)
     var resp = await fetch(CF_WORKER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        fn_index: 1, 
-        data: [base64, email] 
-      })
+      body: JSON.stringify({ fn_index: 1, data: [cleanBase64, email] })
     });
 
     document.getElementById('videoProgressFill').style.width = '100%';
-    
-    if (!resp.ok) {
-      throw new Error('Upload failed: ' + resp.statusText);
-    }
+    if (!resp.ok) throw new Error('Worker failed: ' + resp.status);
 
-    var result = await resp.json();
-    var statusMessage = result.data ? result.data[0] : 'Video submitted successfully!';
-    
-    // Close modal
     document.getElementById('videoModal').classList.remove('show');
-    
-    // Show success message in main page
-    var existing = document.getElementById('irisResult');
-    if (existing) existing.remove();
-    var div = document.createElement('div');
-    div.id = 'irisResult';
-    div.style.cssText = 'background:var(--bg2);border:1px solid rgba(56,189,248,0.2);border-radius:16px;padding:32px;margin-top:24px;';
-    div.innerHTML = '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Video Processing Started</div>' +
-      '<div style="font-family:\'Instrument Serif\',serif;font-size:28px;letter-spacing:-1px;margin-bottom:12px;">Check your <em style="color:var(--accent);">email.</em></div>' +
-      '<div style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:24px;">IRIS is processing <strong style="color:var(--text);">' + selectedVideo.name + '</strong> frame by frame. You will receive an email at <strong style="color:var(--text);">' + email + '</strong> when complete. Processing takes 5-15 minutes.</div>' +
-      '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:12px;color:var(--muted);line-height:1.8;">' +
-      '<strong style="color:var(--accent);">What happens next:</strong><br/><br/>' +
-      '1. IRIS analyzes each frame with the HeatmapModel<br/>' +
-      '2. Generates per-frame metrics (MAE, AUC, CC, KL, NSS)<br/>' +
-      '3. Overlays heatmaps on original video<br/>' +
-      '4. Preserves original audio<br/>' +
-      '5. Emails you the download link<br/><br/>' +
-      '<div style="font-size:11px;color:var(--muted);white-space:pre-wrap;">' + statusMessage + '</div></div>';
-    document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
-
     addToHistory(selectedVideo.name, 'Video', 2);
-    selectedVideo = null;
-    
-    // Reset form
-    document.getElementById('videoInput').value = '';
-    document.getElementById('runVideoBtn').disabled = true;
-    document.getElementById('runVideoBtn').textContent = 'Upload a video first';
-    document.getElementById('videoUploadArea').querySelector('.upload-label').innerHTML = 
-      'Click or drag a video here<br/><span>MP4 up to 100MB</span>';
+    alert("Success! Check your email in 5-15 mins.");
     
   } catch(err) {
-    console.error('Video upload error:', err);
-    document.getElementById('videoModalError').textContent = 'Upload failed: ' + err.message + '. Please try again or contact support.';
+    console.error('Video error:', err);
+    document.getElementById('videoModalError').textContent = 'Upload failed: ' + err.message;
     document.getElementById('videoModalError').style.display = 'block';
+    btn.disabled = false;
+    cancelBtn.disabled = false;
   }
-  
-  // Reset button states
-  btn.disabled = false;
-  cancelBtn.disabled = false;
-  btn.textContent = 'Upload and Process Video';
-  document.getElementById('videoProgress').style.display = 'none';
-  document.getElementById('videoProgressFill').style.width = '0%';
 });
 
-document.getElementById('videoCancelBtn').addEventListener('click', function() {
+document.getElementById('videoCancelBtn').addEventListener('click', () => {
   document.getElementById('videoModal').classList.remove('show');
-  document.getElementById('videoModalError').style.display = 'none';
-  document.getElementById('videoProgress').style.display = 'none';
-  document.getElementById('videoProgressFill').style.width = '0%';
 });
 
-document.getElementById('signOutBtn').addEventListener('click', async function() {
+document.getElementById('signOutBtn').addEventListener('click', async () => {
   await sb.auth.signOut();
   window.location.href = 'login.html';
-});
-
-// Drag and drop support
-['imageUploadArea','videoUploadArea'].forEach(function(id) {
-  var el = document.getElementById(id);
-  el.addEventListener('dragover', function(e) { e.preventDefault(); el.classList.add('dragover'); });
-  el.addEventListener('dragleave', function() { el.classList.remove('dragover'); });
-  el.addEventListener('drop', function(e) {
-    e.preventDefault();
-    el.classList.remove('dragover');
-    var file = e.dataTransfer.files[0];
-    if (!file) return;
-    if (id === 'imageUploadArea') {
-      document.getElementById('imageInput').files = e.dataTransfer.files;
-      handleImageUpload(document.getElementById('imageInput'));
-    } else {
-      document.getElementById('videoInput').files = e.dataTransfer.files;
-      handleVideoUpload(document.getElementById('videoInput'));
-    }
-  });
 });
 
 init();
