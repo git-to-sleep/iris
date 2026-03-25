@@ -195,8 +195,7 @@ input[type=file]{display:none;}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 var SUPABASE_URL  = 'https://qdjaiuiqvhrtthqjfdhe.supabase.co';
-var SUPABASE_ANON = 'sb_publishable_QXOclGe7joGLy-C6b-x4Sg_4L32xDWq';
-var HF_SPACE      = 'https://privateuser1234-iris.hf.space';
+var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkamFpdWlxdmhydHRocWpmZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU4NjE5OTEsImV4cCI6MjA1MTQzNzk5MX0.1JHcpfQbLlbmQQWZLfZ4qDvG-JVHfq9iHVJrC0RlhcQ';
 var CF_WORKER     = 'https://irishug.irisbydot.workers.dev';
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -302,17 +301,9 @@ function addToHistory(name, type, credits) {
   document.getElementById('historyBody').innerHTML = rows.join('');
 }
 
-function showIframeResult() {
-  var existing = document.getElementById('irisResult');
-  if (existing) existing.remove();
-  var div = document.createElement('div');
-  div.id = 'irisResult';
-  div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:24px;';
-  div.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">IRIS Live</div>' +
-    '<iframe src="' + HF_SPACE + '" style="width:100%;height:600px;border:none;"></iframe>';
-  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
-}
-
+// ═══════════════════════════════════════════════════════
+// IMAGE ANALYSIS (stays in same tab, uses CF Worker)
+// ═══════════════════════════════════════════════════════
 document.getElementById('runImageBtn').addEventListener('click', async function() {
   if (!selectedImage || userCredits < 1) return;
   var btn = document.getElementById('runImageBtn');
@@ -366,50 +357,141 @@ document.getElementById('runImageBtn').addEventListener('click', async function(
     addToHistory(selectedImage.name, 'Image', 1);
     btn.textContent = 'Analysis complete';
   } catch(err) {
-    addToHistory(selectedImage.name, 'Image', 1);
-    btn.textContent = 'Analysis complete';
-    showIframeResult();
+    console.error('Image analysis error:', err);
+    btn.textContent = 'Error - try again';
+    btn.disabled = false;
   }
   selectedImage = null;
+  document.getElementById('imageInput').value = '';
+  document.getElementById('imageUploadArea').querySelector('.upload-label').innerHTML = 
+    'Click or drag an image here<br/><span>JPG, PNG, WEBP up to 20MB</span>';
 });
 
-document.getElementById('runVideoBtn').addEventListener('click', async function() {
+// ═══════════════════════════════════════════════════════
+// VIDEO ANALYSIS (stays in same tab, uses CF Worker)
+// ═══════════════════════════════════════════════════════
+document.getElementById('runVideoBtn').addEventListener('click', function() {
   if (!selectedVideo || userCredits < 2) return;
-  var btn = document.getElementById('runVideoBtn');
+  // Show email modal
+  document.getElementById('videoModal').classList.add('show');
+  document.getElementById('videoEmail').value = currentUser.email; // Pre-fill user's email
+});
+
+document.getElementById('videoSubmitBtn').addEventListener('click', async function() {
+  var email = document.getElementById('videoEmail').value.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById('videoModalError').textContent = 'Please enter a valid email address';
+    document.getElementById('videoModalError').style.display = 'block';
+    return;
+  }
+  
+  var btn = document.getElementById('videoSubmitBtn');
+  var cancelBtn = document.getElementById('videoCancelBtn');
   btn.disabled = true;
+  cancelBtn.disabled = true;
   btn.textContent = 'Deducting credits...';
+  document.getElementById('videoModalError').style.display = 'none';
 
-  // Open tab immediately on click — Safari blocks window.open after async calls
-  var newTab = window.open(HF_SPACE, '_blank');
-
+  // Deduct credits
   var deductResult = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 2 });
   if (deductResult.error) {
     btn.disabled = false;
-    btn.textContent = 'Run Analysis - 2 Credits';
-    if (newTab) newTab.close();
-    alert('Error: ' + deductResult.error.message);
+    cancelBtn.disabled = false;
+    btn.textContent = 'Upload and Process Video';
+    document.getElementById('videoModalError').textContent = 'Error: ' + deductResult.error.message;
+    document.getElementById('videoModalError').style.display = 'block';
     return;
   }
 
   userCredits -= 2;
   videosCount += 1;
   updateDisplay();
-  addToHistory(selectedVideo.name, 'Video', 2);
+  
+  btn.textContent = 'Converting video...';
+  
+  try {
+    // Convert video to base64
+    var base64 = await new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload  = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(selectedVideo);
+    });
 
-  var existing = document.getElementById('irisResult');
-  if (existing) existing.remove();
-  var div = document.createElement('div');
-  div.id = 'irisResult';
-  div.style.cssText = 'background:var(--bg2);border:1px solid rgba(56,189,248,0.2);border-radius:16px;padding:32px;margin-top:24px;';
-  div.innerHTML = '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Video Submitted</div>' +
-    '<div style="font-family:\'Instrument Serif\',serif;font-size:28px;letter-spacing:-1px;margin-bottom:12px;">Check your <em style="color:var(--accent);">email.</em></div>' +
-    '<div style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:24px;">IRIS is processing your video frame by frame. In the tab that just opened, enter your email to receive results. Processing takes 5-15 minutes.</div>' +
-    '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:12px;color:var(--muted);line-height:1.8;">' +
-    '1. Click the Video Analysis tab<br/>2. Upload your video<br/>3. Enter your email<br/>4. Click Submit<br/>5. Check your email when done</div>';
-  document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+    btn.textContent = 'Uploading to IRIS...';
+    document.getElementById('videoProgress').style.display = 'block';
+    document.getElementById('videoProgressFill').style.width = '30%';
 
-  btn.textContent = 'Video submitted';
-  selectedVideo = null;
+    // Send to Cloudflare Worker (fn_index: 1 for video)
+    var resp = await fetch(CF_WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        fn_index: 1, 
+        data: [base64, email] 
+      })
+    });
+
+    document.getElementById('videoProgressFill').style.width = '100%';
+    
+    if (!resp.ok) {
+      throw new Error('Upload failed: ' + resp.statusText);
+    }
+
+    var result = await resp.json();
+    var statusMessage = result.data ? result.data[0] : 'Video submitted successfully!';
+    
+    // Close modal
+    document.getElementById('videoModal').classList.remove('show');
+    
+    // Show success message in main page
+    var existing = document.getElementById('irisResult');
+    if (existing) existing.remove();
+    var div = document.createElement('div');
+    div.id = 'irisResult';
+    div.style.cssText = 'background:var(--bg2);border:1px solid rgba(56,189,248,0.2);border-radius:16px;padding:32px;margin-top:24px;';
+    div.innerHTML = '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Video Processing Started</div>' +
+      '<div style="font-family:\'Instrument Serif\',serif;font-size:28px;letter-spacing:-1px;margin-bottom:12px;">Check your <em style="color:var(--accent);">email.</em></div>' +
+      '<div style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:24px;">IRIS is processing <strong style="color:var(--text);">' + selectedVideo.name + '</strong> frame by frame. You will receive an email at <strong style="color:var(--text);">' + email + '</strong> when complete. Processing takes 5-15 minutes.</div>' +
+      '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:12px;color:var(--muted);line-height:1.8;">' +
+      '<strong style="color:var(--accent);">What happens next:</strong><br/><br/>' +
+      '1. IRIS analyzes each frame with the HeatmapModel<br/>' +
+      '2. Generates per-frame metrics (MAE, AUC, CC, KL, NSS)<br/>' +
+      '3. Overlays heatmaps on original video<br/>' +
+      '4. Preserves original audio<br/>' +
+      '5. Emails you the download link<br/><br/>' +
+      '<div style="font-size:11px;color:var(--muted);white-space:pre-wrap;">' + statusMessage + '</div></div>';
+    document.getElementById('historyEmpty').parentNode.insertBefore(div, document.getElementById('historyEmpty'));
+
+    addToHistory(selectedVideo.name, 'Video', 2);
+    selectedVideo = null;
+    
+    // Reset form
+    document.getElementById('videoInput').value = '';
+    document.getElementById('runVideoBtn').disabled = true;
+    document.getElementById('runVideoBtn').textContent = 'Upload a video first';
+    document.getElementById('videoUploadArea').querySelector('.upload-label').innerHTML = 
+      'Click or drag a video here<br/><span>MP4 up to 100MB</span>';
+    
+  } catch(err) {
+    console.error('Video upload error:', err);
+    document.getElementById('videoModalError').textContent = 'Upload failed: ' + err.message + '. Please try again or contact support.';
+    document.getElementById('videoModalError').style.display = 'block';
+  }
+  
+  // Reset button states
+  btn.disabled = false;
+  cancelBtn.disabled = false;
+  btn.textContent = 'Upload and Process Video';
+  document.getElementById('videoProgress').style.display = 'none';
+  document.getElementById('videoProgressFill').style.width = '0%';
+});
+
+document.getElementById('videoCancelBtn').addEventListener('click', function() {
+  document.getElementById('videoModal').classList.remove('show');
+  document.getElementById('videoModalError').style.display = 'none';
+  document.getElementById('videoProgress').style.display = 'none';
+  document.getElementById('videoProgressFill').style.width = '0%';
 });
 
 document.getElementById('signOutBtn').addEventListener('click', async function() {
@@ -417,6 +499,7 @@ document.getElementById('signOutBtn').addEventListener('click', async function()
   window.location.href = 'login.html';
 });
 
+// Drag and drop support
 ['imageUploadArea','videoUploadArea'].forEach(function(id) {
   var el = document.getElementById(id);
   el.addEventListener('dragover', function(e) { e.preventDefault(); el.classList.add('dragover'); });
