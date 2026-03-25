@@ -209,19 +209,61 @@ let imagesCount   = 0;
 let videosCount   = 0;
 let selectedImage = null;
 let selectedVideo = null;
-let analysisHistory = [];
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = 'login.html'; return; }
   currentUser = session.user;
+
+  // Profile Data
+  const { data: p } = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
+  userCredits = p?.credits ?? 10;
+
+  // UI Setup
   document.getElementById('navEmail').textContent = currentUser.email;
   const firstName = currentUser.user_metadata?.first_name || currentUser.email.split('@')[0];
   document.getElementById('welcomeTitle').innerHTML = 'Welcome,<br/><em>' + firstName + '.</em>';
-
-  const { data: p } = await sb.from('profiles').select('credits').eq('id', currentUser.id).single();
-  userCredits = p?.credits ?? 10;
+  
   updateDisplay();
+  
+  // SECURE REFUND CHECK
+  handleSecureRefund();
+}
+
+async function handleSecureRefund() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') !== 'refund') return;
+
+    console.log("Validating secure refund ticket...");
+
+    // 1. Verify ticket exists
+    const { data: tickets, error } = await sb
+        .from('refund_tickets')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .limit(1);
+
+    if (tickets && tickets.length > 0) {
+        const ticketId = tickets[0].id;
+
+        // 2. Grant credits via RPC
+        const { error: rpcError } = await sb.rpc('deduct_credit', {
+            user_id: currentUser.id,
+            amount: -2 // Adds 2
+        });
+
+        if (!rpcError) {
+            // 3. Delete ticket (One-time use)
+            await sb.from('refund_tickets').delete().eq('id', ticketId);
+            
+            alert("✓ System Error Authenticated. 2 Credits have been refunded to your account.");
+            window.history.replaceState({}, document.title, "/dashboard"); 
+            userCredits += 2;
+            updateDisplay();
+        }
+    } else {
+        console.warn("No valid refund ticket found in vault.");
+    }
 }
 
 function updateDisplay() {
@@ -230,6 +272,10 @@ function updateDisplay() {
   document.getElementById('creditsUsed').textContent = (10 - userCredits);
   document.getElementById('imagesCount').textContent = imagesCount;
   document.getElementById('videosCount').textContent = videosCount;
+  
+  if(userCredits <= 0) {
+      document.getElementById('noCreditsMsg').style.display = 'block';
+  }
 }
 
 function handleImageUpload(input) {
@@ -237,6 +283,7 @@ function handleImageUpload(input) {
   selectedImage = input.files[0];
   document.getElementById('imageUploadArea').querySelector('.upload-label').innerHTML = `<span>${selectedImage.name}</span><br/>${(selectedImage.size/1024/1024).toFixed(1)}MB`;
   document.getElementById('runImageBtn').disabled = userCredits < 1;
+  document.getElementById('runImageBtn').innerText = "Run Image Analysis";
 }
 
 function handleVideoUpload(input) {
@@ -244,11 +291,16 @@ function handleVideoUpload(input) {
   selectedVideo = input.files[0];
   document.getElementById('videoUploadArea').querySelector('.upload-label').innerHTML = `<span>${selectedVideo.name}</span><br/>${(selectedVideo.size/1024/1024).toFixed(1)}MB`;
   document.getElementById('runVideoBtn').disabled = userCredits < 2;
+  document.getElementById('runVideoBtn').innerText = "Run Video Analysis";
 }
 
 document.getElementById('runVideoBtn').addEventListener('click', () => {
   document.getElementById('videoModal').classList.add('show');
   document.getElementById('videoEmail').value = currentUser.email;
+});
+
+document.getElementById('videoCancelBtn').addEventListener('click', () => {
+  document.getElementById('videoModal').classList.remove('show');
 });
 
 document.getElementById('videoSubmitBtn').addEventListener('click', async function() {
@@ -263,9 +315,9 @@ document.getElementById('videoSubmitBtn').addEventListener('click', async functi
   try {
     let finalFile = selectedVideo;
 
-    // 1. COMPRESSION ENGINE (FFmpeg)
+    // 1. COMPRESSION (If needed)
     if (selectedVideo.size > 48 * 1024 * 1024) {
-      log.innerText = "Video > 50MB. Starting compression...";
+      log.innerText = "Video > 50MB. Starting neural compression...";
       if (!ffmpeg.isLoaded()) await ffmpeg.load();
       ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(selectedVideo));
       await ffmpeg.run('-i', 'input.mp4', '-b:v', '1200k', '-preset', 'ultrafast', 'output.mp4');
@@ -275,38 +327,41 @@ document.getElementById('videoSubmitBtn').addEventListener('click', async functi
 
     // 2. DEDUCT CREDITS
     fill.style.width = '30%';
-    log.innerText = "Deducting credits...";
+    log.innerText = "Authenticating credits...";
     const { error: dErr } = await sb.rpc('deduct_credit', { user_id: currentUser.id, amount: 2 });
     if (dErr) throw dErr;
 
     // 3. SECURE UPLOAD
     fill.style.width = '60%';
-    log.innerText = "Uploading to secure vault...";
+    log.innerText = "Uploading to IRIS vault...";
     const path = `analyses/${Date.now()}_video.mp4`;
     const { error: uErr } = await sb.storage.from('analyses').upload(path, finalFile);
     if (uErr) throw uErr;
 
-    // 4. GENERATE SIGNED URL (Fixed logic)
+    // 4. SIGNED URL
     fill.style.width = '80%';
-    log.innerText = "Generating secure access...";
+    log.innerText = "Creating secure tunnel...";
     const { data: sData, error: sErr } = await sb.storage.from('analyses').createSignedUrl(path, 600);
-    if (sErr || !sData) throw new Error("Could not generate secure link: " + (sErr?.message || "Storage error"));
+    if (sErr || !sData) throw new Error("Storage tunnel failed.");
 
-    // 5. HANDOFF TO WORKER
+    // 5. WORKER HANDOFF
     await fetch(CF_WORKER, { method: 'POST', body: JSON.stringify({ url: sData.signedUrl, email: email }) });
 
-    // 6. IMMEDIATE CLEANUP
-    await sb.storage.from('analyses').remove([path]);
-
     fill.style.width = '100%';
-    log.innerText = "Success! Analysis started.";
+    log.innerText = "Success! Analysis in progress.";
     userCredits -= 2; videosCount++; updateDisplay();
-    setTimeout(() => { document.getElementById('videoModal').classList.remove('show'); }, 1000);
+    
+    setTimeout(() => { document.getElementById('videoModal').classList.remove('show'); }, 1500);
 
   } catch (err) {
     log.innerText = "Error: " + err.message;
     btn.disabled = false;
   }
+});
+
+document.getElementById('signOutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
 });
 
 init();
